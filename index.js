@@ -33,6 +33,22 @@ async function getMembersWithLanguages(memberList) {
 function createMemberUpdateRequests(memberList) {
     // TODO: create list of requests to send to Orbit for each member
     // TODO: Use makeLanguageArray function to create an array of tags for each member
+    return memberList.map(member => {
+        const languages = member.attributes.languages
+        const tags = makeLanguageArray(languages)
+        return {
+            method: 'PUT',
+            url: `https://app.orbit.love/api/v1/bryan-personal/members/${member.id}`,
+            headers: {
+                Accept: 'application/json',
+                Authorization: `Bearer ${process.env.API_KEY}`
+            },
+            data: {
+                tags_to_add: tags
+            }
+        }
+    })
+    // console.log(requests)
 }
 
 function makeLanguageArray(languages) {
@@ -43,9 +59,13 @@ async function run() {
     const members = await getAllData('https://app.orbit.love/api/v1/bryan-personal/members?affiliation=member&start_date=2022-01-01&items=100')
 
     const membersWithLanguage = await getMembersWithLanguages(members)
+
+    const memberUpdateRequests = createMemberUpdateRequests(membersWithLanguage)
     // TODO: create list of requests to send to Orbit for each member
     // The list should have an array of tags built from the array of languages for each member
-
+    Promise.all(memberUpdateRequests.map(request => axios(request))).then(axios.spread((...allData) => {
+        console.log({ allData });
+      }))
 
 }
 
