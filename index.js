@@ -10,7 +10,6 @@ async function getAllData(url, collector = []) {
         }  
     })
     collector.push(...data.data);
-    console.log(`done: `)
     // TODO: UNCOMMENT when ready for bulk 
     // if (data.links.next) {
     //     await getAllData(data.links.next, collector);
