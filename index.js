@@ -19,7 +19,6 @@ async function getAllData(url, collector = []) {
 }
 
 async function getMembersWithLanguages(memberList) {
-    console.log(memberList[0].attributes.languages)
     const membersWithLanguage = memberList.filter(member => {
         const languages = member.attributes.languages
 
