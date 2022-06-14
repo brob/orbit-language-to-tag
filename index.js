@@ -1,5 +1,7 @@
+const pLimit = require('p-limit');
 const axios = require('axios');
 require('dotenv').config();
+
 
 async function getAllData(url, collector = []) {
     let {data} = await axios(url, {
@@ -10,11 +12,10 @@ async function getAllData(url, collector = []) {
         }  
     })
     collector.push(...data.data);
-    // TODO: UNCOMMENT when ready for bulk 
-    // if (data.links.next) {
-    //     await getAllData(data.links.next, collector);
-    // }
-
+    if (data.links.next) {
+        await getAllData(data.links.next, collector);
+    }
+    if(!data.links.next) console.log(`Collected ${collector.length} members`)
     return collector;
 }
 
@@ -24,19 +25,18 @@ async function getMembersWithLanguages(memberList) {
 
         return languages && languages.length > 0
     })
-
+    console.log(`Found ${membersWithLanguage.length} members with languages`)
     return membersWithLanguage
 }
 
 function createMemberUpdateRequests(memberList) {
-    // TODO: create list of requests to send to Orbit for each member
-    // TODO: Use makeLanguageArray function to create an array of tags for each member
+
     return memberList.map(member => {
         const languages = member.attributes.languages
         const tags = makeLanguageArray(languages)
         return {
             method: 'PUT',
-            url: `https://app.orbit.love/api/v1/bryan-personal/members/${member.id}`,
+            url: `https://app.orbit.love/api/v1/${process.env.WORKSPACE}/members/${member.id}`,
             headers: {
                 Accept: 'application/json',
                 Authorization: `Bearer ${process.env.API_KEY}`
@@ -54,15 +54,18 @@ function makeLanguageArray(languages) {
 }
 
 async function run() {
+    // Sets the max concurrent limit for the requests
+    const limit = pLimit(60);
+
     const members = await getAllData('https://app.orbit.love/api/v1/bryan-personal/members?affiliation=member&start_date=2022-01-01&items=100')
 
     const membersWithLanguage = await getMembersWithLanguages(members)
 
     const memberUpdateRequests = createMemberUpdateRequests(membersWithLanguage)
-    // TODO: create list of requests to send to Orbit for each member
-    // The list should have an array of tags built from the array of languages for each member
-    Promise.all(memberUpdateRequests.map(request => axios(request))).then(axios.spread((...allData) => {
-        console.log({ allData });
+
+    let promises = memberUpdateRequests.map(request => limit(() => axios(request)));
+    Promise.all(promises).then(axios.spread((...allData) => {
+        console.log(`Updated ${allData.length} members`);
       }))
 
 }
