@@ -2,7 +2,6 @@ const pLimit = require('p-limit');
 const axios = require('axios');
 require('dotenv').config();
 
-const limit = pLimit(120);
 
 async function getAllData(url, collector = []) {
     let {data} = await axios(url, {
@@ -55,6 +54,9 @@ function makeLanguageArray(languages) {
 }
 
 async function run() {
+    // Sets the max concurrent limit for the requests
+    const limit = pLimit(60);
+
     const members = await getAllData('https://app.orbit.love/api/v1/bryan-personal/members?affiliation=member&start_date=2022-01-01&items=100')
 
     const membersWithLanguage = await getMembersWithLanguages(members)
